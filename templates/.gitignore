@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+
+# Downloaded intermediates. Only the generated stores.json is tracked -
+# sitemaps, landing pages and raw API dumps are working files.
+*.html
+*.xml
