@@ -3,7 +3,8 @@
 How I build and run store-location scrapers.
 
 Each brand I track gets its own repo (`stores-aldi`, `stores-auspost`,
-`stores-ampol`, `stores-dan-murphys`, `stores-ww-new`, …). Every one of them
+`stores-ampol`, `stores-dan-murphys`, `stores-ww-new`,
+`stores-chemist-warehouse`, …). Every one of them
 does the same thing: fetch a retailer's public store list on a schedule, write
 it to JSON, and commit that JSON back to the repo when — and only when — it
 actually changed. The git history is the point: it's a free, diffable record of
