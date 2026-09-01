@@ -32,6 +32,14 @@ from the page's JavaScript, see the secrets section in
 If the API exists but only answers "what's near this point", don't give up on
 it — go to step 6.
 
+**Check the API host separately from the website.** They are often not behind
+the same protection. Chemist Warehouse's `www` returns 403 to anything without
+a solved Cloudflare `cf_clearance` cookie — including `/robots.txt` and
+`/sitemap.xml`, which kills steps 2 to 5 for anything running unattended —
+while `api.chemistwarehouse.com.au` answers a bare `curl` all day. When a
+recorded browser request comes with a pile of cookies, try it without them
+before assuming they matter.
+
 ## 2. Sitemaps
 
 If there's no usable list endpoint, try `/sitemap.xml` and any locator-specific
@@ -86,17 +94,55 @@ and make an empty result loud.
 Some APIs only answer "what's near this point" and have no way to list
 everything. AusPost is the case in point. The workaround:
 
-1. Lay a grid of points over the country — spacing must be less than
+1. **Measure the radius and the page cap before designing the grid.** Both are
+   often not what the UI implies, and everything else depends on them. Widen
+   `radius` and `limit` and see what actually changes: Chemist Warehouse
+   accepts `radius`, `distance`, `maxDistance`, `searchRadius` and `range`,
+   ignores all of them, and is pinned at exactly 26 km — which was found by
+   picking one isolated regional store and binary-searching a probe point in
+   and out of range. It takes five minutes and it is the difference between a
+   340-point grid and a 7,700-point one.
+2. Lay a grid of points over the country — spacing must be less than
    `radius × √2` so the circles overlap with no gaps. ~300 km spacing with a
    250 km radius covers Australia in around 340 points.
-2. Paginate each point (`offset`/`size`) until exhausted; caps are usually
-   ~100 per page.
-3. **Dedupe by store id** across overlapping circles.
-4. Remember the outlying bits — Norfolk, Lord Howe, Christmas, Cocos — if the
+3. Paginate each point (`offset`/`size`) until exhausted; caps are usually
+   ~100 per page. Check whether results come back distance-sorted: if they do,
+   a dense city genuinely truncates at the cap, and a point that returns
+   exactly `limit` rows is a point you have not finished reading.
+4. **Dedupe by store id** across overlapping circles.
+5. Remember the outlying bits — Norfolk, Lord Howe, Christmas, Cocos — if the
    brand serves them.
 
 Expensive (AusPost takes ~7 minutes) but completely reliable. Add a small
 inter-request delay and set `timeout-minutes` on the job.
+
+**A grid is worth a test, which almost nothing else here is.** It is the one
+technique that fails by returning a plausible number of stores rather than
+zero — a hole in the grid just quietly drops whatever was inside it. A check
+that asserts no point in the swept area is further than `radius` from a probe
+costs a few seconds and catches the whole class;
+`stores-chemist-warehouse/tests/check_coverage.py` is one.
+
+Two traps in that geometry, both of which cost a rewrite:
+
+- **A triangular lattice does not work in lat/lon.** It needs 30% fewer points
+  than a square one for the same guarantee, which is tempting on a big grid,
+  but it only holds if adjacent rows are offset by exactly half a step — and
+  the east-west step is a function of `cos(latitude)`, so the offset shears
+  apart as you move away from the origin meridian. Around 20 km of drift per
+  row at Sydney's longitude, reopening exactly the gaps it was meant to close.
+  Use a square grid unless you want to project properly.
+- **Anchor the grid near the middle of the country, not at one edge.** The same
+  `cos(latitude)` drift accumulates with the column index, so a grid indexed
+  from the west coast is measurably more sheared at Sydney than one indexed
+  from 133°E.
+
+**Cadence: a grid does not have to run at one speed.** If a full sweep is
+thousands of requests, run it weekly and run a cheap daily pass over just the
+cells around the stores you already know about, seeded from the committed
+JSON — that is where nearly every new store appears, and anything the weekly
+sweep discovers is covered by every daily run after it. Chemist Warehouse is
+7,738 points weekly against ~480 daily, for identical output on the day.
 
 ## 7. Two-phase: index then details
 
