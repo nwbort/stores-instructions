@@ -1,0 +1,88 @@
+# Copy to .github/workflows/scrape.yml in a new stores-<brand> repo.
+#
+# Pick a cron minute no other store repo is using, and keep it off the hour -
+# GitHub queues everyone's :00 jobs. The workflow deliberately knows nothing
+# about the brand: all of that lives in ./scrape.sh.
+
+name: Scrape
+
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+  # Daily at 6:23 AM UTC
+  - cron: '23 6 * * *'
+  # For hourly at 42 minutes past the hour: '42 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scrape
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ !github.event.repository.is_template }}
+    steps:
+    - uses: actions/checkout@v4
+
+    # First run in a fresh repo: seed scrape.sh from the repo description,
+    # which by convention is the source URL.
+    - name: Create scrape.sh if it doesn't exist
+      run: |
+        if [ ! -f "scrape.sh" ]; then
+          echo '#!/bin/bash' > scrape.sh
+          if [[ "$REPO_DESC" == http://* ]] || [[ "$REPO_DESC" == https://* ]]; then
+            echo "./download.sh '$REPO_DESC'" >> scrape.sh
+          else
+            echo "# ./download.sh 'https://www.example.com/'" >> scrape.sh
+          fi
+          chmod +x scrape.sh
+          echo "Created scrape.sh"
+          echo -e "# Scheduled scraper\n\nFor $REPO_DESC" > README.md
+        fi
+      env:
+        REPO_DESC: ${{ github.event.repository.description }}
+
+    # Uncomment when the scraper is Python:
+    # - name: Set up Python
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version: "3.13"
+    #     cache: "pip"
+    # - name: Install dependencies
+    #   run: pip install -r requirements.txt
+
+    # Uncomment for Playwright via shot-scraper (add shot-scraper to
+    # requirements.txt). Last resort - see SCRAPING.md.
+    # - name: Cache Playwright browsers
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: ~/.cache/ms-playwright/
+    #     key: ${{ runner.os }}-browsers
+    # - name: Install Playwright dependencies
+    #   run: shot-scraper install
+
+    # Any secret the scraper needs goes here as an env var, never hardcoded.
+    # The script should fail fast with an actionable message when it's unset.
+    - name: Run the scraper
+      # env:
+      #   BRAND_AUTH_KEY: ${{ secrets.BRAND_AUTH_KEY }}
+      run: ./scrape.sh
+
+    # Commit only when the data actually changed - `|| exit 0` handles the
+    # no-op case. If the output must contain a timestamp or other volatile
+    # field, this guard never fires; strip it before comparing instead
+    # (see PRINCIPLES.md section 3).
+    - name: Commit and push
+      run: |-
+        git config user.name "Automated"
+        git config user.email "actions@users.noreply.github.com"
+        git add -A
+        timestamp=$(date -u)
+        git commit -m "Update store data: ${timestamp}" || exit 0
+        git pull --rebase
+        git push
