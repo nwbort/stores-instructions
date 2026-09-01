@@ -9,20 +9,13 @@ Before anything else: open the store locator in a browser with devtools on the
 Network tab, search for a suburb, and watch what the page actually requests.
 Nine times out of ten the answer is sitting right there.
 
-## 1. Sitemaps
+## 1. The site's own JSON API
 
-Try `/sitemap.xml` first, then any locator-specific one — Woolworths publishes
-`/sitemap-store-locator.xml`, Ampol's main sitemap lists every store page.
-
-Cheap, stable, cache-friendly, and it gives you a complete list of stores for
-one request. Often the slug alone carries an id, a name and a state
-(`/storelocator/nsw-neutral-bay-1234`), which may be all you need. If not,
-it's a perfect index for step 7.
-
-## 2. The site's own JSON API
-
-Most locators are a thin frontend over an internal JSON endpoint. In the best
-case one unauthenticated request returns every store — Dan Murphy's
+Most locators are a thin frontend over an internal JSON endpoint, and that
+endpoint is almost always the best thing to scrape: it's the richest source
+(full addresses, coordinates, trading hours, services), it's a contract the
+site's own UI depends on, and in the best case one unauthenticated request
+returns every store. Dan Murphy's
 `api.danmurphys.com.au/apis/ui/StoreLocator/Stores/danmurphys` is the whole
 scraper.
 
@@ -31,6 +24,21 @@ whether the parameters can be widened: a `radius=25` in the UI often accepts
 much more, and a `pageSize` cap is worth probing. If the endpoint needs a key
 from the page's JavaScript, see the secrets section in
 [PRINCIPLES.md](./PRINCIPLES.md#5-secrets-and-public-api-keys).
+
+If the API exists but only answers "what's near this point", don't give up on
+it — go to step 6.
+
+## 2. Sitemaps
+
+If there's no usable list endpoint, try `/sitemap.xml` and any locator-specific
+one — Woolworths publishes `/sitemap-store-locator.xml`, Ampol's main sitemap
+lists every store page.
+
+Cheap, stable, cache-friendly, and it gives you a complete list of stores for
+one request. Often the slug alone carries an id, a name and a state
+(`/storelocator/nsw-neutral-bay-1234`), which may be all you need. More often
+it's thin on detail, so treat it as an index and pair it with a per-store
+fetch — step 7.
 
 ## 3. Third-party locator platforms
 
@@ -96,7 +104,8 @@ since addresses and trading hours change far more slowly than the store list.
 
 Write each store's detail to its own file (`store-details/<id>.json`) rather
 than one giant blob: the diffs stay tiny and readable, and a single failed
-fetch doesn't poison the whole file.
+fetch doesn't poison the whole file. These are generated output, so they're
+tracked — the fetched HTML they came from isn't.
 
 ## 8. Headless browser
 
@@ -112,12 +121,13 @@ rather than scraping the rendered DOM.
 
 It will. Sites get rebuilt and scrapers go quiet rather than loud.
 
-1. Check the committed raw artefact (sitemap, landing page) — the diff usually
-   shows the migration.
-2. Re-run the devtools pass from the top of this ladder. The answer is often
-   that the site moved *up* a rung: a hand-rolled HTML directory became a SPA
-   with a clean vendor API behind it, which is a better scraper than the one
-   you had.
+1. Re-run the devtools pass from the top of this ladder — don't start by
+   debugging the existing scraper. The answer is usually that the source moved,
+   and often that it moved *up* a rung: a hand-rolled HTML directory becomes a
+   SPA with a clean vendor API behind it, which is a better scraper than the
+   one you had.
+2. The last good commit of the output file tells you what the data used to look
+   like, and roughly when it stopped looking like that.
 3. Keep the output filename and schema stable even when the method changes
    completely, so the history stays continuous.
 4. Write down what moved and why, in a docstring at the top of the scraper.

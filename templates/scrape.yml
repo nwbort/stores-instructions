@@ -3,6 +3,9 @@
 # Pick a cron minute no other store repo is using, and keep it off the hour -
 # GitHub queues everyone's :00 jobs. The workflow deliberately knows nothing
 # about the brand: all of that lives in ./scrape.sh.
+#
+# Set OUTPUT to the file(s) scrape.sh generates. Only those get committed -
+# anything downloaded on the way there is a working file, not data to track.
 
 name: Scrape
 
@@ -28,24 +31,6 @@ jobs:
     if: ${{ !github.event.repository.is_template }}
     steps:
     - uses: actions/checkout@v4
-
-    # First run in a fresh repo: seed scrape.sh from the repo description,
-    # which by convention is the source URL.
-    - name: Create scrape.sh if it doesn't exist
-      run: |
-        if [ ! -f "scrape.sh" ]; then
-          echo '#!/bin/bash' > scrape.sh
-          if [[ "$REPO_DESC" == http://* ]] || [[ "$REPO_DESC" == https://* ]]; then
-            echo "./download.sh '$REPO_DESC'" >> scrape.sh
-          else
-            echo "# ./download.sh 'https://www.example.com/'" >> scrape.sh
-          fi
-          chmod +x scrape.sh
-          echo "Created scrape.sh"
-          echo -e "# Scheduled scraper\n\nFor $REPO_DESC" > README.md
-        fi
-      env:
-        REPO_DESC: ${{ github.event.repository.description }}
 
     # Uncomment when the scraper is Python:
     # - name: Set up Python
@@ -77,11 +62,16 @@ jobs:
     # no-op case. If the output must contain a timestamp or other volatile
     # field, this guard never fires; strip it before comparing instead
     # (see PRINCIPLES.md section 3).
+    #
+    # The output files are named explicitly rather than `git add -A`, so a
+    # downloaded sitemap or landing page can't sneak into the history.
     - name: Commit and push
+      env:
+        OUTPUT: stores.json
       run: |-
         git config user.name "Automated"
         git config user.email "actions@users.noreply.github.com"
-        git add -A
+        git add $OUTPUT
         timestamp=$(date -u)
         git commit -m "Update store data: ${timestamp}" || exit 0
         git pull --rebase

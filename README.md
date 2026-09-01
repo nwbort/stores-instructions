@@ -25,14 +25,14 @@ scraping code is different for every site and should stay that way.
 
 ## Starting a new store repo
 
-1. Create `stores-<brand>`, and set the **repo description to the source URL**
-   (the workflow template bootstraps `scrape.sh` from it).
+1. Create `stores-<brand>`.
 2. Copy in `templates/download.sh`, `templates/.gitignore`,
    `templates/repo-README.md` (as `README.md`) and `templates/scrape.yml` (to
    `.github/workflows/scrape.yml`).
 3. Work down the ladder in [SCRAPING.md](./SCRAPING.md) until something
    returns the full store list.
-4. Write `scrape.sh` as the single entrypoint that produces the JSON.
+4. Write `scrape.sh` as the single entrypoint that produces `stores.json` —
+   and only `stores.json`; anything downloaded along the way is a working file.
 5. Pick a cron minute that no other store repo is using, and check that a
    second run in a row commits nothing.
 6. Note in the repo's README where the data comes from and how to get it

@@ -18,9 +18,9 @@ history clean enough to be worth reading.
 independently, run on different cadences, and have wildly different shapes — a
 broken Ampol scraper should never stop the Woolworths data from updating.
 
-**Set the repo description to the source URL.** It's the first thing you want
-when you come back in six months, and the workflow template reads it to
-bootstrap `scrape.sh` on first run.
+**Say where the data comes from in the README.** The source URL, and whatever
+you needed to find it — which page, which request, which header. It's the first
+thing you want when you come back in six months and the locator has moved.
 
 ## 2. Output: JSON, boringly formatted, stably ordered
 
@@ -44,10 +44,12 @@ bootstrap `scrape.sh` on first run.
   Murphy's returns one tidy JSON document, so it's saved almost verbatim.
   AusPost's radius API returns something unusable, so it gets flattened into a
   designed schema. Both are fine. Don't do transformation work for its own sake.
-- **Keep the raw intermediate when it's cheap.** Sitemaps and locator landing
-  pages get committed alongside the parsed output. When a scraper starts
-  returning nonsense, the diff on the raw file usually tells you why in one
-  glance.
+- **Commit the generated JSON and nothing else.** Intermediates — downloaded
+  sitemaps, locator landing pages, raw API dumps — are working files. Write them
+  somewhere ignored, or to a temp directory, and let them be thrown away. Some
+  of the older repos do commit their raw sitemap or HTML; that's history, not a
+  pattern to copy. The store list is what's being tracked, and every extra file
+  in the repo is noise in the diff that made you look.
 
 ## 3. Only commit when the data actually changed
 
@@ -58,11 +60,14 @@ The cheap version, which is enough for most repos — let git decide, and exit
 cleanly when there's nothing to commit:
 
 ```bash
-git add -A
+git add stores.json
 git commit -m "Update store data: $(date -u)" || exit 0
 git pull --rebase
 git push
 ```
+
+Name the output files explicitly rather than `git add -A`, so a stray
+intermediate can never sneak into a commit (see above).
 
 **The trap: volatile fields.** If the output embeds a `generated_at` timestamp,
 a request id, or a server-side "last updated", the file differs on *every* run

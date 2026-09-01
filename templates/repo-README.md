@@ -6,8 +6,9 @@ actually changed.
 
 ## Source
 
-<source URL> — <one line on what it is: sitemap / locator API / vendor
-endpoint, and anything needed to get at it again.>
+<source URL> — <one line on what it is: locator API / sitemap / vendor
+endpoint, and anything needed to find it again: which page, which request,
+which header.>
 
 ## Running locally
 
