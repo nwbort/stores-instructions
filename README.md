@@ -13,6 +13,10 @@ This repo holds the principles behind that setup, so a new store repo can be
 stood up without re-deriving them. It is deliberately not a framework — the
 scraping code is different for every site and should stay that way.
 
+And they're principles, not rules. They're the defaults that have worked so
+far; any of them can be broken when a site gives you a good reason, which
+sites regularly do. Just leave a note saying why.
+
 ## Read this
 
 - **[PRINCIPLES.md](./PRINCIPLES.md)** — repo shape, output format, commit

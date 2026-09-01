@@ -5,6 +5,10 @@ consistent is the *order you try things in*. Work down this ladder and stop at
 the first rung that gives you the whole store list — each step down costs more
 to build and breaks more often.
 
+It's an order of preference, not a procedure. Skip rungs, combine them, or go
+straight to the bottom if that's what the site needs — plenty of scrapers end
+up as two rungs stitched together.
+
 Before anything else: open the store locator in a browser with devtools on the
 Network tab, search for a suburb, and watch what the page actually requests.
 Nine times out of ten the answer is sitting right there.

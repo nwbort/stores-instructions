@@ -1,7 +1,19 @@
 # Principles
 
-The rules of thumb behind every `stores-*` repo. Deviate when a site forces it,
-but deviate knowingly.
+The rules of thumb behind every `stores-*` repo.
+
+**These are defaults, not rules.** They're here so that the boring decisions
+are already made and a new repo can be stood up without re-litigating them —
+not so that every repo looks the same. Every one of them can be broken, and
+some of them will need to be: sites are weird, and a principle that made sense
+across five brands can be exactly wrong for the sixth.
+
+So: start from these, and when a source pushes back, do the thing that works.
+The only real ask is that a deliberate deviation gets a sentence in the repo's
+README or a comment in the scraper saying why — so that future-you can tell it
+apart from an oversight. Retrofitting a principle onto a repo that's already
+working fine is rarely worth it either; several of the existing repos don't
+follow all of this, and they're not broken.
 
 ## 1. The repo is the dataset
 
